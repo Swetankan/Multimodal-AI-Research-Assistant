@@ -27,7 +27,7 @@ class FaissVectorStore:
         storage_dir: str | Path = "storage"
     ) -> None:
         self.embedding_model_name = embedding_model
-        self.encoder = SentenceTransformer(embedding_model)
+        self.encoder: SentenceTransformer | None = None
         self.storage_dir = Path(storage_dir)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
         self.index_path = self.storage_dir / "faiss.index"
@@ -45,8 +45,13 @@ class FaissVectorStore:
         self.index_path.unlink(missing_ok=True)
         self.metadata_path.unlink(missing_ok=True)
 
+    def _get_encoder(self) -> SentenceTransformer:
+        if self.encoder is None:
+            self.encoder = SentenceTransformer(self.embedding_model_name)
+        return self.encoder
+
     def _embed(self, texts: Iterable[str]) -> np.ndarray:
-        embeddings = self.encoder.encode(
+        embeddings = self._get_encoder().encode(
             list(texts),
             convert_to_numpy=True,
             normalize_embeddings=True,
@@ -85,6 +90,7 @@ class FaissVectorStore:
 
         self.index = faiss.read_index(str(self.index_path))
         payload = json.loads(self.metadata_path.read_text(encoding="utf-8"))
+        self.embedding_model_name = payload.get("embedding_model", self.embedding_model_name)
         self.chunks = [RetrievedChunk(**item) for item in payload.get("chunks", [])]
         return bool(self.chunks)
 
@@ -133,7 +139,9 @@ class FaissVectorStore:
             "index_path": str(self.index_path),
             "metadata_path": str(self.metadata_path),
             "chunks_indexed": len(self.chunks),
-            "persisted": self.index_path.exists() and self.metadata_path.exists()
+            "persisted": self.index_path.exists() and self.metadata_path.exists(),
+            "embedding_model": self.embedding_model_name,
+            "encoder_loaded": self.encoder is not None,
         }
 
     @staticmethod
