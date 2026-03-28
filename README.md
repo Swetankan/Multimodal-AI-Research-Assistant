@@ -278,84 +278,132 @@ Important current design choices:
 
 ## Deployment
 
-Recommended deployment split:
+Recommended deployment split for a free preview setup:
 
 - Frontend: Vercel
-- Backend: Railway or Render
+- Backend: Render Free Web Service
 
-For this project, Railway is a very good backend choice because the FastAPI service lives cleanly inside the `backend` directory and Railway supports GitHub-based FastAPI deployment and config-as-code.
+This is the best free deployment option for the current codebase.
 
-### Railway backend deployment
+### Why Render is the right backend choice here
 
-Official references:
+- FastAPI runs cleanly on Render web services.
+- The current backend is not a good fit for Vercel serverless because it uses `sentence-transformers`, `torch`, and local vector storage.
+- Render is simpler than trying to force this backend into a serverless function model.
 
-- https://docs.railway.com/guides/fastapi
-- https://docs.railway.com/config-as-code/reference
+### Render backend deployment (click-by-click)
 
-This repo now includes `backend/railway.toml` for the FastAPI service.
+Official reference:
 
-Suggested Railway setup:
+- https://render.com/docs/deploy-fastapi
 
-- Create a new Railway project from your GitHub repository.
-- Set the service root directory to `backend`.
-- Railway should pick up `backend/railway.toml`.
-- Generate a public domain from Railway after the service deploys.
+This repo includes `render.yaml`, but you can also configure the service manually through the Render dashboard.
 
-Backend environment variables to set on Railway:
+#### Step 1: Open Render
 
-- `OPENROUTER_API_KEY`
-- `OPENROUTER_MODEL`
-- `OPENROUTER_BASE_URL`
-- `OPENROUTER_SITE_URL`
-- `OPENROUTER_APP_NAME`
-- `OLLAMA_BASE_URL` if using Ollama instead of OpenRouter
-- `FRONTEND_ORIGINS`
-- `LANGSMITH_TRACING`
-- `LANGSMITH_ENDPOINT`
-- `LANGSMITH_API_KEY`
-- `LANGSMITH_PROJECT`
+- Sign in to Render.
+- Click `New +`.
+- Click `Web Service`.
+- Choose `Build and deploy from a Git repository`.
 
-Set `FRONTEND_ORIGINS` to your Vercel frontend URL once the frontend is deployed.
+#### Step 2: Connect GitHub
 
-### Render backend deployment
+- Connect your GitHub account if Render asks.
+- Select this repository:
+  `Swetankan/Multimodal-AI-Research-Assistant`
 
-Official reference: https://render.com/docs/deploy-fastapi
+#### Step 3: Configure the backend service
 
-This repo also includes `render.yaml`, so Render remains a valid alternative if you prefer it.
+Use these settings:
 
-Backend service settings:
+- Name: `multimodal-ai-research-assistant-api`
+- Root Directory: `backend`
+- Runtime: `Python 3`
+- Build Command: `pip install -r requirements.txt`
+- Start Command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+- Instance Type: `Free`
 
-- Root directory: `backend`
-- Build command: `pip install -r requirements.txt`
-- Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-- Health check path: `/`
+#### Step 4: Add backend environment variables
 
-### Vercel frontend deployment
+Add these in the Render dashboard:
+
+- `OPENROUTER_API_KEY=your_key_here`
+- `OPENROUTER_MODEL=openai/gpt-4o-mini`
+- `OPENROUTER_BASE_URL=https://openrouter.ai/api/v1`
+- `OPENROUTER_SITE_URL=https://your-frontend-url.vercel.app`
+- `OPENROUTER_APP_NAME=Multimodal AI Research Assistant`
+- `FRONTEND_ORIGINS=https://your-frontend-url.vercel.app`
+- `LANGSMITH_TRACING=true`
+- `LANGSMITH_ENDPOINT=https://api.smith.langchain.com`
+- `LANGSMITH_API_KEY=your_langsmith_key_here`
+- `LANGSMITH_PROJECT=capstone2draft2`
+
+Optional only if you want Ollama instead of OpenRouter:
+
+- `OLLAMA_BASE_URL=http://localhost:11434`
+
+#### Step 5: Deploy the backend
+
+- Click `Create Web Service`.
+- Wait for the deployment to finish.
+- Open the generated Render URL.
+- Visit `/` on that URL to confirm the healthcheck responds.
+
+Example:
+
+- `https://multimodal-ai-research-assistant-api.onrender.com/`
+
+### Vercel frontend deployment (click-by-click)
 
 Official references:
 
 - https://vercel.com/docs/frameworks/full-stack/nextjs
 - https://vercel.com/docs/git/vercel-for-github
 
-When importing the GitHub repo into Vercel:
+#### Step 1: Open Vercel
 
-- Framework preset: Next.js
-- Root directory: `frontend`
-- Install command: `npm install`
-- Build command: `npm run build`
+- Sign in to Vercel.
+- Click `Add New...`.
+- Click `Project`.
+- Import your GitHub repository:
+  `Swetankan/Multimodal-AI-Research-Assistant`
 
-Frontend environment variable to set on Vercel:
+#### Step 2: Configure the frontend project
 
-- `NEXT_PUBLIC_API_BASE_URL=https://your-backend-domain`
+Use these settings:
+
+- Framework Preset: `Next.js`
+- Root Directory: `frontend`
+- Install Command: `npm install`
+- Build Command: `npm run build`
+- Output Directory: leave default for Next.js
+
+#### Step 3: Add frontend environment variable
+
+Set:
+
+- `NEXT_PUBLIC_API_BASE_URL=https://your-render-backend.onrender.com`
+
+#### Step 4: Deploy the frontend
+
+- Click `Deploy`.
+- Wait for the deployment to finish.
+- Open the Vercel URL.
+
+### Final post-deployment update
+
+After Vercel gives you the real frontend URL, go back to Render and confirm these values are correct:
+
+- `OPENROUTER_SITE_URL=https://your-real-vercel-url.vercel.app`
+- `FRONTEND_ORIGINS=https://your-real-vercel-url.vercel.app`
+
+Then redeploy the backend once so the updated values are active.
 
 ### Preview mode
 
-- Vercel automatically creates preview deployments for branches and pull requests connected through GitHub.
-- Railway can serve as the hosted backend API for those previews.
-- Backend CORS already allows `*.vercel.app`, so preview frontend URLs can call the deployed backend.
+- Vercel automatically creates preview deployments for future pushes and pull requests.
+- The backend already allows `*.vercel.app` through CORS, so those preview frontends can call the Render backend.
 
-### Post-deployment update
+### Important limitation of free hosting
 
-After the frontend is live, update the backend environment variable:
-
-- `OPENROUTER_SITE_URL=https://your-vercel-frontend.vercel.app`
+Render free services can sleep when idle, and this backend stores indexed document state locally. That means free deployment is suitable for preview/demo use, but uploaded PDFs and indexed vectors should be treated as temporary deployment state.
