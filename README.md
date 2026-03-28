@@ -139,7 +139,7 @@ Backend dependencies include:
 
 - `fastapi==0.115.12`
 - `uvicorn[standard]==0.34.0`
-- `faiss-cpu==1.10.0`
+- `faiss-cpu==1.12.0`
 - `sentence-transformers==3.4.1`
 - `langsmith==0.1.147`
 - `pytest==8.4.1`
@@ -407,3 +407,8 @@ Then redeploy the backend once so the updated values are active.
 ### Important limitation of free hosting
 
 Render free services can sleep when idle, and this backend stores indexed document state locally. That means free deployment is suitable for preview/demo use, but uploaded PDFs and indexed vectors should be treated as temporary deployment state.
+
+## Deployment Troubleshooting
+
+- If Render fails with a aiss-cpu version resolution error, redeploy after pulling the latest commit where FAISS is pinned to 1.12.0.
+- If Vercel shows 404 NOT_FOUND, open the Vercel project settings and confirm Root Directory is set to rontend. The frontend must not be deployed from the repository root.
