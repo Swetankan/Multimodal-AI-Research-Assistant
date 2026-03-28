@@ -45,6 +45,7 @@ class ResearchAssistantPipeline:
             "Multimodal AI Research Assistant"
         )
         self.ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        self.model_timeout_seconds = float(os.getenv("MODEL_TIMEOUT_SECONDS", "45"))
         self.vector_store = FaissVectorStore(
             embedding_model=embedding_model,
             storage_dir=storage_dir
@@ -200,7 +201,8 @@ class ResearchAssistantPipeline:
             "X-Title": self.openrouter_app_name
         }
 
-        async with httpx.AsyncClient(timeout=None) as client:
+        timeout = httpx.Timeout(connect=10.0, read=self.model_timeout_seconds, write=20.0, pool=10.0)
+        async with httpx.AsyncClient(timeout=timeout) as client:
             async with client.stream(
                 "POST",
                 f"{self.openrouter_base_url}/chat/completions",
@@ -228,7 +230,8 @@ class ResearchAssistantPipeline:
                         yield token
 
     async def _stream_from_ollama(self, model: str, messages: list[dict[str, str]]):
-        async with httpx.AsyncClient(timeout=None) as client:
+        timeout = httpx.Timeout(connect=5.0, read=self.model_timeout_seconds, write=20.0, pool=10.0)
+        async with httpx.AsyncClient(timeout=timeout) as client:
             async with client.stream(
                 "POST",
                 f"{self.ollama_base_url}/api/chat",
@@ -294,6 +297,7 @@ class ResearchAssistantPipeline:
         error: Exception
     ) -> str:
         provider_name = "OpenRouter" if provider == "openrouter" else "Ollama"
+        formatted_error = self._format_error(error)
         if contexts:
             evidence = "\n\n".join(
                 f"- {chunk.text[:320].strip()}" for chunk in contexts[:3]
@@ -304,21 +308,31 @@ class ResearchAssistantPipeline:
                 "Most relevant evidence from the uploaded PDF:\n"
                 f"{evidence}\n\n"
                 f"Once {provider_name} is available, the same endpoint will turn these retrieved chunks into a full grounded answer. "
-                f"Underlying error: {error}"
+                f"Underlying error: {formatted_error}"
             )
 
         if provider == "openrouter":
             return (
                 "I could not reach OpenRouter, so I cannot generate a full free-form answer yet. "
                 f"Your question was: '{query}'. Add OPENROUTER_API_KEY to backend/.env or verify the OpenRouter configuration, then retry. "
-                f"Underlying error: {error}"
+                f"Underlying error: {formatted_error}"
             )
 
         return (
             "I could not reach the configured Ollama model, so I cannot generate a full free-form answer yet. "
             f"Your question was: '{query}'. Start Ollama or point OLLAMA_BASE_URL at a running model server, then retry. "
-            f"Underlying error: {error}"
+            f"Underlying error: {formatted_error}"
         )
+
+    @staticmethod
+    def _format_error(error: Exception) -> str:
+        if isinstance(error, httpx.ReadTimeout):
+            return "Upstream model request timed out."
+        if isinstance(error, httpx.ConnectTimeout):
+            return "Could not connect to the model provider in time."
+        if isinstance(error, httpx.HTTPStatusError):
+            return f"Provider returned HTTP {error.response.status_code}."
+        return str(error)
 
     @staticmethod
     def _event(payload: dict[str, Any]) -> str:

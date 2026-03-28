@@ -412,3 +412,10 @@ Render free services can sleep when idle, and this backend stores indexed docume
 
 - If Render fails with a aiss-cpu version resolution error, redeploy after pulling the latest commit where FAISS is pinned to 1.12.0.
 - If Vercel shows 404 NOT_FOUND, open the Vercel project settings and confirm Root Directory is set to rontend. The frontend must not be deployed from the repository root.
+
+
+## Hosted Runtime Notes
+
+- On free Render instances, the first PDF upload can still be slow because the embedding model must load on the backend instance.
+- The backend now supports MODEL_TIMEOUT_SECONDS to prevent chat requests from hanging forever when the upstream model provider stalls.
+- For hosted deployments, prefer EMBEDDING_MODEL=sentence-transformers/paraphrase-MiniLM-L3-v2 unless you specifically want the larger L6 model.
