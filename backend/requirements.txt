@@ -1,0 +1,11 @@
+fastapi==0.115.12
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+pypdf==5.4.0
+faiss-cpu==1.10.0
+sentence-transformers==3.4.1
+numpy==2.2.4
+httpx==0.28.1
+python-dotenv==1.0.1
+langsmith==0.1.147
+pytest==8.4.1

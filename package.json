@@ -1,0 +1,7 @@
+{
+  "name": "multimodal-ai-research-assistant",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/dev.js"
+  }
+}

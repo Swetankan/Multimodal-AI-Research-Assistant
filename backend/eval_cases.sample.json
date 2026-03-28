@@ -1,0 +1,20 @@
+[
+  {
+    "name": "paper-summary",
+    "query": "What benchmark results does the paper report?",
+    "expected_terms": ["benchmark", "results", "dataset"],
+    "top_k": 4
+  },
+  {
+    "name": "methodology",
+    "query": "Which methodology or architecture is proposed?",
+    "expected_terms": ["method", "architecture", "model"],
+    "top_k": 4
+  },
+  {
+    "name": "ablation",
+    "query": "Does the paper include an ablation study or error analysis?",
+    "expected_terms": ["ablation", "analysis", "study"],
+    "top_k": 5
+  }
+]

@@ -1,0 +1,19 @@
+{
+  "name": "Multimodal AI Research Assistant",
+  "short_name": "Research AI",
+  "icons": [
+    {
+      "src": "/icon/favicon-128x128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon/mstile-144x144.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#09090b",
+  "background_color": "#09090b",
+  "display": "standalone"
+}
