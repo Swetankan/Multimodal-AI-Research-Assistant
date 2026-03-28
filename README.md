@@ -281,19 +281,47 @@ Important current design choices:
 Recommended deployment split:
 
 - Frontend: Vercel
-- Backend: Render
+- Backend: Railway or Render
 
-This project is not a single-platform deployment because the frontend is a Next.js app and the backend is a standalone FastAPI service.
+For this project, Railway is a very good backend choice because the FastAPI service lives cleanly inside the `backend` directory and Railway supports GitHub-based FastAPI deployment and config-as-code.
 
-### 1. Push the repo to GitHub
+### Railway backend deployment
 
-Create the remote repository and push this project root.
+Official references:
 
-### 2. Deploy the backend on Render
+- https://docs.railway.com/guides/fastapi
+- https://docs.railway.com/config-as-code/reference
+
+This repo now includes `backend/railway.toml` for the FastAPI service.
+
+Suggested Railway setup:
+
+- Create a new Railway project from your GitHub repository.
+- Set the service root directory to `backend`.
+- Railway should pick up `backend/railway.toml`.
+- Generate a public domain from Railway after the service deploys.
+
+Backend environment variables to set on Railway:
+
+- `OPENROUTER_API_KEY`
+- `OPENROUTER_MODEL`
+- `OPENROUTER_BASE_URL`
+- `OPENROUTER_SITE_URL`
+- `OPENROUTER_APP_NAME`
+- `OLLAMA_BASE_URL` if using Ollama instead of OpenRouter
+- `FRONTEND_ORIGINS`
+- `LANGSMITH_TRACING`
+- `LANGSMITH_ENDPOINT`
+- `LANGSMITH_API_KEY`
+- `LANGSMITH_PROJECT`
+
+Set `FRONTEND_ORIGINS` to your Vercel frontend URL once the frontend is deployed.
+
+### Render backend deployment
 
 Official reference: https://render.com/docs/deploy-fastapi
 
-This repo now includes `render.yaml`, so Render can import the backend service directly from the repository.
+This repo also includes `render.yaml`, so Render remains a valid alternative if you prefer it.
 
 Backend service settings:
 
@@ -302,23 +330,7 @@ Backend service settings:
 - Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
 - Health check path: `/`
 
-Backend environment variables to set on Render:
-
-- `OPENROUTER_API_KEY`
-- `OPENROUTER_MODEL`
-- `OPENROUTER_BASE_URL`
-- `OPENROUTER_SITE_URL`
-- `OPENROUTER_APP_NAME`
-- `OLLAMA_BASE_URL` if you intend to use Ollama instead of OpenRouter
-- `FRONTEND_ORIGINS`
-- `LANGSMITH_TRACING`
-- `LANGSMITH_ENDPOINT`
-- `LANGSMITH_API_KEY`
-- `LANGSMITH_PROJECT`
-
-For `FRONTEND_ORIGINS`, use your Vercel production URL and any custom domain you add later.
-
-### 3. Deploy the frontend on Vercel
+### Vercel frontend deployment
 
 Official references:
 
@@ -331,29 +343,19 @@ When importing the GitHub repo into Vercel:
 - Root directory: `frontend`
 - Install command: `npm install`
 - Build command: `npm run build`
-- Output setting: default Next.js output
 
-Frontend environment variables to set on Vercel:
+Frontend environment variable to set on Vercel:
 
-- `NEXT_PUBLIC_API_BASE_URL=https://your-render-backend.onrender.com`
+- `NEXT_PUBLIC_API_BASE_URL=https://your-backend-domain`
 
-Vercel preview deployments will now work against the deployed backend as long as the backend allows that frontend origin.
-
-### 4. Update backend site URL for OpenRouter
-
-Once the frontend is live, update the backend environment variable:
-
-- `OPENROUTER_SITE_URL=https://your-vercel-frontend.vercel.app`
-
-This keeps provider metadata aligned with the deployed frontend.
-
-### 5. Preview mode behavior
+### Preview mode
 
 - Vercel automatically creates preview deployments for branches and pull requests connected through GitHub.
-- Render runs the backend as a hosted API service; your Vercel preview frontend can call that shared backend.
+- Railway can serve as the hosted backend API for those previews.
+- Backend CORS already allows `*.vercel.app`, so preview frontend URLs can call the deployed backend.
 
-## Deployment Notes
+### Post-deployment update
 
-- Backend CORS now allows local networks and `*.vercel.app` preview domains.
-- Local vector storage is ignored by git and should not be committed.
-- Secrets must never be committed; keep using `backend/.env` only for local development and set production secrets in the hosting dashboards.
+After the frontend is live, update the backend environment variable:
+
+- `OPENROUTER_SITE_URL=https://your-vercel-frontend.vercel.app`
