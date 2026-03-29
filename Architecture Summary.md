@@ -59,12 +59,5 @@ Phase 4: Persistence and multi-document support.
 - Add document/session state into LangGraph memory or external persistence.
 - Support multiple uploaded PDFs, metadata filtering, and document-level citations.
 
-So the recommended viva answer is:
-- Current version is custom FastAPI RAG because it is simpler, transparent, and fits the problem.
-- LangSmith is already integrated for observability.
-- The system is migration-ready because the boundaries are already clean: ingestion, retrieval, prompt building, and generation are separated in dedicated modules.
 
-If you want, I can convert this into:
-1. a viva speech script
-2. a PPT-ready architecture slide
-3. examiner-style Q&A with model answers
+
